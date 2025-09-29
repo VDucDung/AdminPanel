@@ -35,7 +35,8 @@ interface EntityFormProps {
   initialData?: Record<string, any>
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: Record<string, any>) => void
+  onSubmit: (data: Record<string, any>) => Promise<void> | void
+  isLoading?: boolean
 }
 
 export function EntityForm({
@@ -45,15 +46,22 @@ export function EntityForm({
   initialData = {},
   isOpen,
   onOpenChange,
-  onSubmit
+  onSubmit,
+  isLoading = false
 }: EntityFormProps) {
   const [formData, setFormData] = useState(initialData)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     console.log(`Submitting ${title}:`, formData)
-    onSubmit(formData)
-    onOpenChange(false)
+    try {
+      await onSubmit(formData)
+      // Only close form if submission was successful
+      // The parent component will handle closing via onOpenChange
+    } catch (error) {
+      console.error("Form submission error:", error)
+      // Keep form open on error so user can retry
+    }
   }
 
   const handleInputChange = (name: string, value: string) => {
@@ -117,11 +125,21 @@ export function EntityForm({
             ))}
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)} 
+              data-testid="button-cancel"
+              disabled={isLoading}
+            >
               Hủy
             </Button>
-            <Button type="submit" data-testid="button-submit">
-              Lưu
+            <Button 
+              type="submit" 
+              data-testid="button-submit"
+              disabled={isLoading}
+            >
+              {isLoading ? "Đang lưu..." : "Lưu"}
             </Button>
           </DialogFooter>
         </form>

@@ -1,21 +1,38 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DashboardStats } from "@/components/dashboard-stats"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
 
 export default function Dashboard() {
-  // todo: remove mock data
-  const chartData = [
-    { name: "T1", users: 120, tools: 8, vps: 3, proxies: 12 },
-    { name: "T2", users: 150, tools: 12, vps: 5, proxies: 18 },
-    { name: "T3", users: 180, tools: 15, vps: 4, proxies: 22 },
-    { name: "T4", users: 220, tools: 18, vps: 6, proxies: 28 },
-    { name: "T5", users: 280, tools: 22, vps: 8, proxies: 35 },
-    { name: "T6", users: 350, tools: 28, vps: 12, proxies: 45 },
+  // Mock data for monthly revenue
+  const revenueData = [
+    { month: "T1", revenue: 12500000 },
+    { month: "T2", revenue: 15300000 },
+    { month: "T3", revenue: 18700000 },
+    { month: "T4", revenue: 21200000 },
+    { month: "T5", revenue: 24800000 },
+    { month: "T6", revenue: 28900000 },
+    { month: "T7", revenue: 32100000 },
+    { month: "T8", revenue: 29500000 },
+    { month: "T9", revenue: 34200000 },
+    { month: "T10", revenue: 38600000 },
+    { month: "T11", revenue: 42300000 },
+    { month: "T12", revenue: 45800000 },
   ]
 
-  const pieData = [
-    { name: "User hoạt động", value: 1150, color: "hsl(var(--chart-1))" },
-    { name: "User tạm khóa", value: 97, color: "hsl(var(--chart-2))" },
+  // Mock data for new users per month
+  const newUsersData = [
+    { month: "T1", newUsers: 45 },
+    { month: "T2", newUsers: 62 },
+    { month: "T3", newUsers: 78 },
+    { month: "T4", newUsers: 89 },
+    { month: "T5", newUsers: 95 },
+    { month: "T6", newUsers: 112 },
+    { month: "T7", newUsers: 128 },
+    { month: "T8", newUsers: 134 },
+    { month: "T9", newUsers: 156 },
+    { month: "T10", newUsers: 178 },
+    { month: "T11", newUsers: 192 },
+    { month: "T12", newUsers: 215 },
   ]
 
   return (
@@ -30,133 +47,56 @@ export default function Dashboard() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="hover-elevate">
           <CardHeader>
-            <CardTitle>Biểu đồ tăng trưởng</CardTitle>
-            <CardDescription>Xu hướng tăng trưởng theo tháng</CardDescription>
+            <CardTitle>Doanh thu theo tháng</CardTitle>
+            <CardDescription>Biểu đồ doanh thu 12 tháng gần nhất (VNĐ)</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
+              <LineChart data={revenueData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
+                <XAxis dataKey="month" />
+                <YAxis 
+                  tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
+                />
+                <Tooltip 
+                  formatter={(value) => [`${value.toLocaleString('vi-VN')} VNĐ`, 'Doanh thu']}
+                  labelFormatter={(label) => `Tháng ${label}`}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="revenue" 
+                  stroke="hsl(var(--chart-1))" 
+                  strokeWidth={3}
+                  dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 2, r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-elevate">
+          <CardHeader>
+            <CardTitle>Người dùng mới theo tháng</CardTitle>
+            <CardDescription>Lượng người dùng đăng ký mới trong 12 tháng</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={newUsersData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip />
-                <Bar dataKey="users" fill="hsl(var(--chart-1))" name="Users" />
-                <Bar dataKey="tools" fill="hsl(var(--chart-2))" name="Tools" />
-                <Bar dataKey="vps" fill="hsl(var(--chart-3))" name="VPS" />
-                <Bar dataKey="proxies" fill="hsl(var(--chart-4))" name="Proxies" />
+                <Tooltip 
+                  formatter={(value) => [`${value} người`, 'Người dùng mới']}
+                  labelFormatter={(label) => `Tháng ${label}`}
+                />
+                <Bar 
+                  dataKey="newUsers" 
+                  fill="hsl(var(--chart-2))" 
+                  name="Người dùng mới"
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-elevate">
-          <CardHeader>
-            <CardTitle>Phân bố User</CardTitle>
-            <CardDescription>Trạng thái hoạt động của user</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="hover-elevate">
-          <CardHeader>
-            <CardTitle className="text-lg">Hoạt động gần đây</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center text-sm">
-                <div className="h-2 w-2 bg-green-500 rounded-full mr-2"></div>
-                <span>User mới đăng ký: john_doe</span>
-              </div>
-              <div className="flex items-center text-sm">
-                <div className="h-2 w-2 bg-blue-500 rounded-full mr-2"></div>
-                <span>VPS mới được thêm: VPS-SG-01</span>
-              </div>
-              <div className="flex items-center text-sm">
-                <div className="h-2 w-2 bg-yellow-500 rounded-full mr-2"></div>
-                <span>Tool được cập nhật: AutoBot v2.1</span>
-              </div>
-              <div className="flex items-center text-sm">
-                <div className="h-2 w-2 bg-purple-500 rounded-full mr-2"></div>
-                <span>Proxy proxy-us-01 offline</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-elevate">
-          <CardHeader>
-            <CardTitle className="text-lg">Thông báo hệ thống</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
-                <p className="text-sm font-medium">Bảo trì định kỳ</p>
-                <p className="text-xs text-muted-foreground">Hệ thống sẽ bảo trì vào 2:00 AM ngày mai</p>
-              </div>
-              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-md">
-                <p className="text-sm font-medium">Cập nhật thành công</p>
-                <p className="text-xs text-muted-foreground">Đã cập nhật 12 proxy servers</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-elevate">
-          <CardHeader>
-            <CardTitle className="text-lg">Tài nguyên hệ thống</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>CPU Usage</span>
-                  <span>45%</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: "45%" }}></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Memory</span>
-                  <span>68%</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="bg-green-600 h-2 rounded-full" style={{ width: "68%" }}></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Storage</span>
-                  <span>32%</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="bg-yellow-600 h-2 rounded-full" style={{ width: "32%" }}></div>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

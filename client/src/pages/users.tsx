@@ -1,70 +1,52 @@
 import { useState } from "react"
 import { DataTable } from "@/components/data-table"
 import { EntityForm } from "@/components/entity-form" 
-import { StatusBadge } from "@/components/status-badge"
-import type { User } from "@shared/schema"
+import type { User, InsertUser } from "@shared/schema"
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from "@/hooks/useUsers"
+import { useToast } from "@/hooks/use-toast"
 
 export default function UsersPage() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const { toast } = useToast()
 
-  // todo: remove mock data
-  const mockUsers: User[] = [
-    {
-      id: "1",
-      username: "admin",
-      email: "admin@example.com",
-      role: "admin",
-      status: "active",
-      lastLogin: new Date("2024-01-15T10:30:00Z")
-    },
-    {
-      id: "2", 
-      username: "user1",
-      email: "user1@example.com",
-      role: "user",
-      status: "active",
-      lastLogin: new Date("2024-01-14T08:15:00Z")
-    },
-    {
-      id: "3",
-      username: "user2", 
-      email: "user2@example.com",
-      role: "user",
-      status: "inactive",
-      lastLogin: new Date("2024-01-10T16:45:00Z")
-    }
-  ]
+  // Use real API hooks
+  const { data: users = [], isLoading, error } = useUsers()
+  const createUserMutation = useCreateUser()
+  const updateUserMutation = useUpdateUser()
+  const deleteUserMutation = useDeleteUser()
 
   const columns = [
-    { header: "ID", accessor: "id" as keyof User, className: "font-mono" },
     { header: "Tên đăng nhập", accessor: "username" as keyof User },
     { header: "Email", accessor: "email" as keyof User },
-    { header: "Vai trò", accessor: "role" as keyof User },
     { 
-      header: "Trạng thái", 
-      accessor: (user: User) => <StatusBadge status={user.status} />
+      header: "Số điện thoại", 
+      accessor: (user: User) => user.phone || "Chưa cập nhật"
     },
     { 
-      header: "Lần đăng nhập cuối",
-      accessor: (user: User) => user.lastLogin 
-        ? new Date(user.lastLogin).toLocaleDateString("vi-VN")
-        : "Chưa đăng nhập"
+      header: "Ngày tham gia",
+      accessor: (user: User) => user.createdAt 
+        ? new Date(user.createdAt).toLocaleDateString("vi-VN")
+        : "Không xác định"
+    },
+    { 
+      header: "Trạng thái khóa",
+      accessor: (user: User) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          user.status === 'active' 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-red-100 text-red-800'
+        }`}>
+          {user.status === 'active' ? 'Không bị khóa' : 'Bị khóa'}
+        </span>
+      )
     }
   ]
 
   const formFields = [
     { name: "username", label: "Tên đăng nhập", type: "text" as const, required: true },
     { name: "email", label: "Email", type: "email" as const, required: true },
-    { 
-      name: "role", 
-      label: "Vai trò", 
-      type: "select" as const,
-      options: [
-        { value: "user", label: "User" },
-        { value: "admin", label: "Admin" }
-      ]
-    },
+    { name: "phone", label: "Số điện thoại", type: "text" as const, required: false },
     {
       name: "status",
       label: "Trạng thái", 
@@ -86,23 +68,66 @@ export default function UsersPage() {
     setIsFormOpen(true)
   }
 
-  const handleDelete = (user: User) => {
-    console.log("Deleting user:", user)
+  const handleDelete = async (user: User) => {
+    try {
+      await deleteUserMutation.mutateAsync(user.id)
+      toast({
+        title: "Thành công",
+        description: "Đã xóa user thành công",
+      })
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: "Không thể xóa user",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleSubmit = (data: Record<string, any>) => {
-    if (editingUser) {
-      console.log("Updating user:", editingUser.id, data)
-    } else {
-      console.log("Creating user:", data)
+  const handleSubmit = async (data: Record<string, any>) => {
+    try {
+      if (editingUser) {
+        await updateUserMutation.mutateAsync({
+          id: editingUser.id,
+          data: data as Partial<InsertUser>
+        })
+        toast({
+          title: "Thành công",
+          description: "Đã cập nhật user thành công",
+        })
+      } else {
+        await createUserMutation.mutateAsync(data as InsertUser)
+        toast({
+          title: "Thành công", 
+          description: "Đã tạo user mới thành công",
+        })
+      }
+      setIsFormOpen(false)
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: editingUser ? "Không thể cập nhật user" : "Không thể tạo user mới",
+        variant: "destructive",
+      })
+      throw error; // Re-throw to prevent form from closing
     }
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <p className="text-red-600">Có lỗi xảy ra khi tải dữ liệu user</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
       <DataTable
         title="Quản lý User"
-        data={mockUsers}
+        data={users}
         columns={columns}
         onAdd={handleAdd}
         onEdit={handleEdit}
@@ -119,6 +144,7 @@ export default function UsersPage() {
         isOpen={isFormOpen}
         onOpenChange={setIsFormOpen}
         onSubmit={handleSubmit}
+        isLoading={createUserMutation.isPending || updateUserMutation.isPending}
       />
     </div>
   )
